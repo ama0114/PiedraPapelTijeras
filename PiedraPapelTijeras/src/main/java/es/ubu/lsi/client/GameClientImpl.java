@@ -27,7 +27,7 @@ public class GameClientImpl {
 	private class GameClientListener{
 		public void run(){
 			
-		};
+		}
 	}
 	
 }
