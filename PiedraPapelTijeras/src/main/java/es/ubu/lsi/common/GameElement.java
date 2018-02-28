@@ -25,7 +25,8 @@ public class GameElement implements Serializable {
 		PIEDRA,
 		PAPEL,
 		TIJERA,
-		LOGOUT;
+		LOGOUT,
+		SHUTDOWN;
 	}
 	
 	/** Type. */
