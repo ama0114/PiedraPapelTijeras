@@ -8,6 +8,8 @@ import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import es.ubu.lsi.common.GameElement;
 
@@ -21,10 +23,20 @@ import es.ubu.lsi.common.GameElement;
 public class GameClientImpl implements GameClient {
 	
 	private String server;
+	
 	private int port;
+	
 	private String username;
+	
+	private Socket clientSocket;
+	
+	private ObjectInputStream in;
+	
+	private ObjectOutputStream out;
+		
 	private GameClientListener listener;
-	private GameClientImpl impl;
+	
+	private ExecutorService threadExecutor = Executors.newSingleThreadExecutor();
 	
 	/**
 	 * @param server nombre del servidor
@@ -32,22 +44,27 @@ public class GameClientImpl implements GameClient {
 	 * @param username nombre de usuario
 	 */
 	public GameClientImpl(String server, int port, String username){
-		this.server = server;
-		this.port = port;
-		this.username = username;
-		listener = new GameClientListener();
+			this.server = server;
+			this.port = port;
+			this.username = username;
 	}
 	
 	/* (non-Javadoc)
 	 * @see es.ubu.lsi.client.GameClient#start()
 	 */
 	public boolean start(){
-		try{
-		listener.run();
-		return true;
-		} catch(Exception e){
-			return false;
+		Boolean retorno = false;
+		try {
+			this.clientSocket = new Socket(server, port);
+			this.listener = new GameClientListener();
+			this.threadExecutor.execute(this.listener);
+			retorno = true;
+		} catch (UnknownHostException e) {
+			System.out.println("Sock:"+e.getMessage());
+		} catch (IOException e) {
+			System.out.println("IO:" + e.getMessage());
 		}
+		return retorno;
 		
 	}
 	
@@ -55,21 +72,35 @@ public class GameClientImpl implements GameClient {
 	 * @see es.ubu.lsi.client.GameClient#sendElement(es.ubu.lsi.common.GameElement)
 	 */
 	public void sendElement(GameElement element){
-		
+		try {
+			this.out.writeObject(element);
+		} catch (IOException e) {
+			System.out.println("IO:" + e.getMessage());
+		}
 	}
 	
 	/* (non-Javadoc)
 	 * @see es.ubu.lsi.client.GameClient#disconnect()
 	 */
 	public void disconnect(){
-
+		this.threadExecutor.shutdown();
+		try {
+			this.in.close();
+			this.out.close();
+			this.clientSocket.close();
+			System.exit(0);
+		} catch (IOException e) {
+			System.out.println("IO:" + e.getMessage());
+		}
+		
 	}
 	
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args){
-
+		GameClientImpl client = new GameClientImpl(args[0], 1500, args[1]);
+		client.start();
 	}
 	
 	/**
@@ -85,19 +116,7 @@ public class GameClientImpl implements GameClient {
 		 * y mostrar los mensajes entrantes
 		 */
 		public void run(){
-			 try {
-		            Socket s = new Socket(server, port);		            
-		            ObjectInputStream in = new ObjectInputStream(s.getInputStream());
-					System.out.println(in.readObject());
-						
-				} catch (ClassNotFoundException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-		           
+			 		           
 		}
 	}
 	

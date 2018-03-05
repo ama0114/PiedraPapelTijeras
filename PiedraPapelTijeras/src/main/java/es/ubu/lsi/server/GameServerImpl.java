@@ -4,6 +4,8 @@
 package es.ubu.lsi.server;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
@@ -19,14 +21,15 @@ import es.ubu.lsi.common.GameElement;
 public class GameServerImpl implements GameServer {
 
 	private int port;
-	
+
 	private ServerSocket serverSocket;
-	
+
 	private Boolean serverStatus;
-	
+
 	private ExecutorService threadExecutor = Executors.newCachedThreadPool();
-	
+
 	private HashMap<Integer, ServerThreadForClient> clientList = new HashMap<Integer, ServerThreadForClient>();
+
 	/**
 	 * @param port
 	 */
@@ -50,10 +53,11 @@ public class GameServerImpl implements GameServer {
 			while(serverStatus){
 				Socket clientSocket = serverSocket.accept();
 				ServerThreadForClient clientThread = new ServerThreadForClient(clientSocket, idClient, idRoom);
+				this.clientList.put(idClient, clientThread);
 				if(idClient % 2 == 0)
 					idRoom++;
 				idClient++;
-				
+				threadExecutor.execute(clientThread);
 			}
 		} catch (IOException e) {
 			System.out.println("Listen :" + e.getMessage());
@@ -64,24 +68,47 @@ public class GameServerImpl implements GameServer {
 	 * @see es.ubu.lsi.server.GameServer#shutdown()
 	 */
 	public void shutdown() {
-		// TODO Auto-generated method stub
-
+		try {
+			for (ServerThreadForClient clientThread : this.clientList.values()) {
+				clientThread.in.close();
+				clientThread.out.close();
+				clientThread.clientSocket.close();
+				clientThread.runStatus = false;
+			}
+			this.threadExecutor.shutdown();
+		} catch (IOException e) {
+			System.out.println("Listen :" + e.getMessage());
+		}
 	}
 
 	/* (non-Javadoc)
 	 * @see es.ubu.lsi.server.GameServer#broadcastRoom(es.ubu.lsi.common.GameElement)
 	 */
 	public void broadcastRoom(GameElement element) {
-		// TODO Auto-generated method stub
-
+		int clientId = element.getId();
+		int roomId = this.clientList.get(clientId).getIdRoom();
+		for (ServerThreadForClient clientThread : this.clientList.values()) {
+			if (clientThread.getIdRoom() == roomId) {
+				// TODO
+			}
+		}
 	}
 
 	/* (non-Javadoc)
 	 * @see es.ubu.lsi.server.GameServer#remove(int)
 	 */
 	public void remove(int id) {
-		// TODO Auto-generated method stub
-
+		try {
+			ServerThreadForClient clientThread = this.clientList.remove(id);
+			clientThread.in.close();
+			clientThread.out.close();
+			clientThread.clientSocket.close();
+			clientThread.runStatus = false;
+		} catch (IOException e) {
+			System.out.println("Listen :" + e.getMessage());
+		} catch (NullPointerException e){
+			System.out.println("Error al borrar el cliente: 'El cliente no existe'.");
+		}
 	}
 
 	/**
@@ -93,24 +120,37 @@ public class GameServerImpl implements GameServer {
 	}
 
 	/**
-		 * @author Miguel Angel Leon
-		 *
-		 */
+	 * @author Miguel Angel Leon
+	 *
+	 */
 	public class ServerThreadForClient extends Thread {
-		
+
 		private Socket clientSocket;
-		
+
 		private int idClient;
-		
+
 		private int idRoom;
-		
+
+		private ObjectInputStream in;
+
+		private ObjectOutputStream out;
+
+		private Boolean runStatus;
+
 		/**
 		 * @param idRoom
 		 */
 		private ServerThreadForClient(Socket clientSocket, int idClient, int idRoom) {
-			this.clientSocket = clientSocket;
-			this.idClient = idClient;
-			this.idRoom = idRoom;
+			try {
+				this.clientSocket = clientSocket;
+				this.idClient = idClient;
+				this.idRoom = idRoom;
+				this.in = new ObjectInputStream(this.clientSocket.getInputStream());
+				this.out = new ObjectOutputStream(out);
+				this.runStatus = true;
+			} catch (IOException e) {
+				System.out.println("ServerThreadForClient:"+e.getMessage());
+			}
 		}
 
 		/**
@@ -125,9 +165,28 @@ public class GameServerImpl implements GameServer {
 		 */
 		@Override
 		public void run() {
-			// TODO Auto-generated method stub
+			try {
+				while(this.runStatus){
+					GameElement gameElement = (GameElement) in.readObject();
+					switch (gameElement.getElement()) {
+					case LOGOUT:
+						remove(this.idClient);
+						break;
+					case SHUTDOWN:
+						shutdown();
+						break;
+					default:
+						broadcastRoom(gameElement);
+						break;
+					}
+				}
+			} catch (IOException e) {
+				System.out.println("ServerThreadForClient:"+e.getMessage());
+			} catch (ClassNotFoundException e) {
+				System.out.println("ServerThreadForClient:"+e.getMessage());
+			}
 		}
-		
+
 	}
-	
+
 }

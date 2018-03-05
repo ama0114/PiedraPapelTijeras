@@ -5,6 +5,7 @@ import es.ubu.lsi.common.GameElement;
 /**
  * Interfaz que define la signatura de los métodos de envío de mensaje, 
  * desconexion y arranque.
+ * 
  * @author Antonio de los Mozos Alonso
  * @author Miguel Angel Leon Bardavio
  */
