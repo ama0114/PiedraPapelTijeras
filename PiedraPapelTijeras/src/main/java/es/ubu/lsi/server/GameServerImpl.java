@@ -37,10 +37,6 @@ public class GameServerImpl implements GameServer {
 		this.port = port;
 	}
 
-	public GameServerImpl() {
-		this.port = 1500;
-	}
-
 	/* (non-Javadoc)
 	 * @see es.ubu.lsi.server.GameServer#startup()
 	 */
@@ -70,12 +66,13 @@ public class GameServerImpl implements GameServer {
 	public void shutdown() {
 		try {
 			for (ServerThreadForClient clientThread : this.clientList.values()) {
-				clientThread.in.close();
-				clientThread.out.close();
 				clientThread.clientSocket.close();
 				clientThread.runStatus = false;
 			}
 			this.threadExecutor.shutdown();
+			this.serverStatus = false;
+			this.serverSocket.close();
+			System.exit(0);
 		} catch (IOException e) {
 			System.out.println("Listen :" + e.getMessage());
 		}
@@ -100,8 +97,6 @@ public class GameServerImpl implements GameServer {
 	public void remove(int id) {
 		try {
 			ServerThreadForClient clientThread = this.clientList.remove(id);
-			clientThread.in.close();
-			clientThread.out.close();
 			clientThread.clientSocket.close();
 			clientThread.runStatus = false;
 		} catch (IOException e) {
@@ -115,7 +110,7 @@ public class GameServerImpl implements GameServer {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		GameServerImpl server = new GameServerImpl();
+		GameServerImpl server = new GameServerImpl(1500);
 		server.startup();
 	}
 
@@ -147,7 +142,7 @@ public class GameServerImpl implements GameServer {
 				this.idRoom = idRoom;
 				this.in = new ObjectInputStream(this.clientSocket.getInputStream());
 				this.out = new ObjectOutputStream(out);
-				this.runStatus = true;
+				this.out.writeInt(this.idClient);
 			} catch (IOException e) {
 				System.out.println("ServerThreadForClient:"+e.getMessage());
 			}
@@ -165,6 +160,7 @@ public class GameServerImpl implements GameServer {
 		 */
 		@Override
 		public void run() {
+			this.runStatus = true;
 			try {
 				while(this.runStatus){
 					GameElement gameElement = (GameElement) in.readObject();

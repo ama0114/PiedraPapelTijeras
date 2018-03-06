@@ -4,7 +4,7 @@
 package es.ubu.lsi.common;
 
 /**
- * @author Miguel Ángel León
+ * @author Miguel Angel Leon
  *
  */
 public enum GameResult {
