@@ -1,23 +1,13 @@
 package es.ubu.lsi.client;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
-import java.net.UnknownHostException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import es.ubu.lsi.common.GameElement;
-import es.ubu.lsi.common.ElementType;
-import es.ubu.lsi.common.GameResult;
+import java.util.concurrent.*;
+import es.ubu.lsi.common.*;
 
 /**
- * Clase que implementa la interfaz GameClient 
- * y que genera un cliente de juego.
+ * Implementa la interfaz GameClient.
+ * 
  * @author Antonio de los Mozos Alonso
  * @author Miguel Angel Leon Bardavio
  *
@@ -30,10 +20,12 @@ public class GameClientImpl implements GameClient {
 	
 	private String username;
 	
+	private int clientId;
+	
 	private Socket clientSocket;
 	
 	private ObjectOutputStream out;
-		
+			
 	private GameClientListener listener;
 	
 	private ExecutorService threadExecutor = Executors.newSingleThreadExecutor();
@@ -53,24 +45,16 @@ public class GameClientImpl implements GameClient {
 	 * @see es.ubu.lsi.client.GameClient#start()
 	 */
 	public boolean start(){
-		Boolean retorno = false;
 		try {
 			this.clientSocket = new Socket(this.server, this.port);
-			this.listener = new GameClientListener(this.clientSocket);
-			BufferedReader stdIn = new BufferedReader( new InputStreamReader(System.in));
+			this.out = new ObjectOutputStream(this.clientSocket.getOutputStream());
+			this.listener = new GameClientListener(this);
 			this.threadExecutor.execute(this.listener);
-			String userInput;
-            while ((userInput = stdIn.readLine()) != null) {
-                sendElement(new GameElement(this.listener.clientId, ElementType.valueOf(userInput)));
-            }
-			retorno = true;
-		} catch (UnknownHostException e) {
-			System.out.println("Sock:"+e.getMessage());
-		} catch (IOException e) {
-			System.out.println("IO:" + e.getMessage());
+			return true;
+		} catch (Exception e) {
+			System.out.println("START EXCEPTION:"+e.getMessage());
+			return false;
 		}
-		return retorno;
-		
 	}
 	
 	/* (non-Javadoc)
@@ -80,7 +64,7 @@ public class GameClientImpl implements GameClient {
 		try {
 			this.out.writeObject(element);
 		} catch (IOException e) {
-			System.out.println("IO:" + e.getMessage());
+			System.out.println("SEND ELEMENT IO EXCEPTION:" + e.getMessage());
 		}
 	}
 	
@@ -88,66 +72,89 @@ public class GameClientImpl implements GameClient {
 	 * @see es.ubu.lsi.client.GameClient#disconnect()
 	 */
 	public void disconnect(){
-		this.threadExecutor.shutdown();
 		try {
+			this.listener.listenerRunStatus = false;
+			this.threadExecutor.shutdown();
 			this.clientSocket.close();
-			System.exit(0);
 		} catch (IOException e) {
-			System.out.println("IO:" + e.getMessage());
+			System.out.println("DISCONNECT IO EXCEPTION:" + e.getMessage());
 		}
 		
 	}
 	
 	/**
-	 * @param args
+	 * Hilo principal del cliente. 
+	 * <p>
+	 * Instancia al cliente y un hilo de escucha al servidor. Despues espera entrada por consola por parte del
+	 * usuario para el envio de la jugada al servidor.
+	 * <p>
+	 * El puerto de conexion es siempre el 1500. El servidor por defecto es localhost.
+	 * <p>
+	 * Ejemplo de llamada: 'java es.ubu.lsi.client.GameClientImpl 10.168.168.13 nickname'.
+	 * 
+	 * @param args Recibe una direccion IP/Nombre de la máquina y un nickname como argumentos.
 	 */
 	public static void main(String[] args){
 		GameClientImpl client = new GameClientImpl(args[0], 1500, args[1]);
 		client.start();
+		
+		BufferedReader stdIn = new BufferedReader( new InputStreamReader(System.in));
+		String userInput;
+		try {
+			while ((userInput = stdIn.readLine()) != null) {
+			    if (userInput == "PIEDRA" || userInput == "PAPEL" || userInput == "TIJERA") {
+					client.sendElement(new GameElement(client.clientId, ElementType.valueOf(userInput)));
+				}else if (userInput == "LOGOUT" || userInput == "SHUTDOWN") {
+					client.sendElement(new GameElement(client.clientId, ElementType.valueOf(userInput)));
+					client.disconnect();
+					break;
+				}else {
+					System.out.println("INVALID COMMAND");
+				}
+			}
+		} catch (IOException e) {
+			System.out.println("MAIN IO EXCEPTION:" + e.getMessage());
+		}
 	}
 	
 	/**
-	 * Clase que implementa la interfaz runnable y nos permite 
-	 * generar un hilo de conexión al servidor
+	 * Hilo de escucha al servidor y muestra los mensajes que recibe del servidor por pantalla.
+	 * 
 	 * @author Antonio de los Mozos Alonso
 	 * @author Miguel Angel Leon Bardavio
 	 */
 	private class GameClientListener implements Runnable{
 		
-		private Socket clientSocket;
-		
-		private int clientId;
+		private GameClientImpl client;
 		
 		private ObjectInputStream in;
 		
-		private Boolean listenerStatus;
-		
+		private Boolean listenerRunStatus;
 		/**
 		 * @param clientSocket
 		 */
-		private GameClientListener(Socket clientSocket) {
+		private GameClientListener(GameClientImpl client) {
 			try {
-				this.clientSocket = clientSocket;
-				this.in = new ObjectInputStream(this.clientSocket.getInputStream());
-				this.clientId = this.in.readInt();
+				this.client = client;
+				this.in = new ObjectInputStream(client.clientSocket.getInputStream());
+				this.client.clientId = this.in.readInt();
 			} catch (IOException e) {
-				System.out.println("GameClientListener:" + e.getMessage());
+				System.out.println("LISTENER CONSTRUCTOR IO EXCEPTION:" + e.getMessage());
 			}
 		}
 
-
-
 		/**
 		 * Metodo para ejecutar un hilo de escucha de mensajes al servidor
-		 * y mostrar los mensajes entrantes
+		 * y mostrar los mensajes entrantes por pantalla.
 		 */
 		public void run(){
-			this.listenerStatus = true;
+			this.listenerRunStatus = true;
 				try {
-					while (true) {
+					while (listenerRunStatus) {
 						GameResult result = (GameResult) this.in.readObject();
 						System.out.println(result.toString());
 					}
+					this.in.close();
 				} catch (ClassNotFoundException e) {
 					System.out.println("GameClientListener:" + e.getMessage());
 				} catch (IOException e) {
@@ -155,5 +162,4 @@ public class GameClientImpl implements GameClient {
 				}
 		}
 	}
-	
 }
