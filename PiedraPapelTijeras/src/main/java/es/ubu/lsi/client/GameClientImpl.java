@@ -12,7 +12,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import es.ubu.lsi.common.GameElement;
-import es.ubu.lsi.common.GameElement.ElementType;
+import es.ubu.lsi.common.ElementType;
 import es.ubu.lsi.common.GameResult;
 
 /**

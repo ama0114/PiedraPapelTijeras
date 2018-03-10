@@ -1,10 +1,11 @@
-/**
- * 
- */
 package es.ubu.lsi.common;
 
 /**
- * @author Miguel Angel Leon
+ * Game result.
+ * 
+ * @author Raúl Marticorena
+ * @author Joaquin P. Seco
+ * @author Mario Erro
  *
  */
 public enum GameResult {

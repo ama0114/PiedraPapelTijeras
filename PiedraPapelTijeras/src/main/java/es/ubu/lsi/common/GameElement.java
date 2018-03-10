@@ -1,7 +1,7 @@
 package es.ubu.lsi.common;
 
 
-import java.io.*;
+import java.io.Serializable;
 
 /**
  * Element in game system.
@@ -13,27 +13,15 @@ import java.io.*;
  */
 public class GameElement implements Serializable {
 
+
 	/** Serial version UID. */
 	private static final long serialVersionUID = 7467237896682458959L;
 
-	/**
-	 * Element type.
-	 * 
-	 * @author Mario Erro
-	 */
-	public enum ElementType {
-		PIEDRA,
-		PAPEL,
-		TIJERA,
-		LOGOUT,
-		SHUTDOWN;
-	}
-	
 	/** Type. */
 	private ElementType element;
 		
 	/** Client id. */
-	private int id;
+	private int clientId;
 	
 	/**
 	 * Constructor.
@@ -42,7 +30,7 @@ public class GameElement implements Serializable {
 	 * @param element element
 	 */
 	public GameElement(int id, ElementType element) {
-		this.setId(id);
+		this.setClientId(id);
 		this.setElement(element);
 	}
 	
@@ -69,8 +57,8 @@ public class GameElement implements Serializable {
 	 * 
 	 * @return sender id
 	 */
-	public int getId() {
-		return id;
+	public int getClientId() {
+		return clientId;
 	}
 
 	/**
@@ -79,8 +67,14 @@ public class GameElement implements Serializable {
 	 * @param id sender id
 	 * 
 	 */
-	private void setId(int id) {
-		this.id = id;
+	private void setClientId(int id) {
+		this.clientId = id;
+	}
+	
+
+	@Override
+	public String toString() {
+		return "GameElement [element=" + element + ", clientId=" + clientId + "]";
 	}
 }
 

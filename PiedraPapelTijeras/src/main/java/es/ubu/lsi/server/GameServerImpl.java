@@ -82,7 +82,7 @@ public class GameServerImpl implements GameServer {
 	 * @see es.ubu.lsi.server.GameServer#broadcastRoom(es.ubu.lsi.common.GameElement)
 	 */
 	public void broadcastRoom(GameElement element) {
-		int clientId = element.getId();
+		int clientId = element.getClientId();
 		int roomId = this.clientList.get(clientId).getIdRoom();
 		for (ServerThreadForClient clientThread : this.clientList.values()) {
 			if (clientThread.getIdRoom() == roomId) {
