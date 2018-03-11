@@ -158,7 +158,7 @@ public class GameServerImpl implements GameServer {
 				this.idRoom = idRoom;
 				this.clientSocket = clientSocket;
 				this.in = new ObjectInputStream(this.clientSocket.getInputStream());
-				this.out = new ObjectOutputStream(out);
+				this.out = new ObjectOutputStream(this.clientSocket.getOutputStream());
 				this.out.writeInt(this.idClient);// Enviar idClient al cliente
 			} catch (IOException e) {
 				System.out.println("ServerThreadForClient:"+e.getMessage());
