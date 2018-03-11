@@ -14,7 +14,7 @@
 	        <javac srcdir="src" destdir="build/classes"/>
 	    </target>
 
-	    <target name="jar-server">
+	    <target name="jar-server" depends="compile">
 	        <mkdir dir="build/jar"/>
 	        <jar destfile="build/jar/Server.jar" basedir="build/classes">
 	            <manifest>
@@ -23,7 +23,7 @@
 	        </jar>
 	    </target>
 	
-		<target name="jar-client">
+		<target name="jar-client" depends="compile">
 		        <mkdir dir="build/jar"/>
 		        <jar destfile="build/jar/Client.jar" basedir="build/classes">
 		            <manifest>
