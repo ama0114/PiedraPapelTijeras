@@ -9,7 +9,8 @@ import es.ubu.lsi.common.*;
 /**
  * Implementa la interfaz GameServer.
  * 
- * @author Miguel Angel Leon
+ * @author Antonio de los Mozos Alonso
+ * @author Miguel Angel Leon Bardavio
  * @see GameServer
  */
 public class GameServerImpl implements GameServer {
