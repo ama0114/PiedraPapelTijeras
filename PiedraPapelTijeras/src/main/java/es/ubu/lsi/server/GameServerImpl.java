@@ -7,6 +7,8 @@ import java.io.*;
 import java.net.*;
 import java.util.concurrent.*;
 import java.util.HashMap;
+import java.util.Map;
+
 import es.ubu.lsi.common.*;
 
 /**
@@ -44,7 +46,7 @@ public class GameServerImpl implements GameServer {
 			int idClient = 1;
 			int idRoom = 1;
 			while(serverRunStatus){
-				Socket clientSocket = serverSocket.accept();// TODO userName
+				Socket clientSocket = serverSocket.accept();
 				ServerThreadForClient clientThread = new ServerThreadForClient(clientSocket, idClient, idRoom);
 				this.clientList.put(idClient, clientThread);
 				this.roomList.put(idRoom, null);
@@ -54,7 +56,7 @@ public class GameServerImpl implements GameServer {
 				threadExecutor.execute(clientThread);
 			}
 		} catch (IOException e) {
-			System.out.println("Listen :" + e.getMessage());
+			System.out.println("STARTUP IO EXCEPTION:" + e.getMessage());
 		}
 	}
 
@@ -71,7 +73,7 @@ public class GameServerImpl implements GameServer {
 			this.serverRunStatus = false;
 			this.serverSocket.close();
 		} catch (IOException e) {
-			System.out.println("Listen :" + e.getMessage());
+			System.out.println("SHUTDOWN IO EXCEPTION:" + e.getMessage());
 		}
 	}
 
@@ -94,12 +96,15 @@ public class GameServerImpl implements GameServer {
 				}else if (element.getElement() == ElementType.PIEDRA && oponentElement.getElement() == ElementType.TIJERA) {
 					clientThread.out.writeObject(GameResult.WIN);
 					oponentThread.out.writeObject(GameResult.LOSE);
+					oponentThread.notify();
 				}else if (element.getElement() == ElementType.TIJERA && oponentElement.getElement() == ElementType.PAPEL) {
 					clientThread.out.writeObject(GameResult.WIN);
 					oponentThread.out.writeObject(GameResult.LOSE);
+					oponentThread.notify();
 				}else if (element.getElement() == oponentElement.getElement()) {
 					clientThread.out.writeObject(GameResult.DRAW);
 					oponentThread.out.writeObject(GameResult.DRAW);
+					oponentThread.notify();
 				}
 			}else {
 				//No: Almacenar respuesta y enviar WAIT
@@ -108,11 +113,11 @@ public class GameServerImpl implements GameServer {
 				clientThread.wait();
 			}
 		} catch (IOException e) {
-			System.out.println("Broadcast IO exception:"+e.getMessage());
+			System.out.println("BROADCAST IO EXCEPTION:"+e.getMessage());
 		} catch (NullPointerException e) {
-			System.out.println("Broadcast NULLPointer exception, client doesn't exists:"+e.getMessage());
+			System.out.println("BROADCAST NULLPointer exception-client doesn't exists:"+e.getMessage());
 		} catch (InterruptedException e) {
-			System.out.println("Broadcast Interrupted exception::"+e.getMessage());
+			System.out.println("BROADCAST INTERRUPTED exception::"+e.getMessage());
 		}
 	}
 
@@ -139,6 +144,8 @@ public class GameServerImpl implements GameServer {
 
 		private int idClient;
 		
+		private String username;
+		
 		private int idRoom;
 		
 		private Socket clientSocket;
@@ -154,11 +161,15 @@ public class GameServerImpl implements GameServer {
 		 */
 		private ServerThreadForClient(Socket clientSocket, int idClient, int idRoom) {
 			try {
+				//Inicializar atributos
 				this.idClient = idClient;
 				this.idRoom = idRoom;
 				this.clientSocket = clientSocket;
+				//Crear flujos de entrada/salida
 				this.in = new ObjectInputStream(this.clientSocket.getInputStream());
 				this.out = new ObjectOutputStream(this.clientSocket.getOutputStream());
+				//Recibir username y enviar clientId
+				this.username = this.in.readUTF(); // TODO se bloquea
 				this.out.writeInt(this.idClient);// Enviar idClient al cliente
 			} catch (IOException e) {
 				System.out.println("ServerThreadForClient:"+e.getMessage());
@@ -177,8 +188,14 @@ public class GameServerImpl implements GameServer {
 		 */
 		@Override
 		public void run() {
+			this.runStatus = true;
+			for (ServerThreadForClient client : clientList.values()) {
+				if (client.username == this.username && client.idClient == this.idClient) {
+					this.runStatus = false;
+					remove(this.idClient);
+				}
+			}
 			try {
-				this.runStatus = true;
 				while(this.runStatus){
 					GameElement gameElement = (GameElement) in.readObject();
 					switch (gameElement.getElement()) {

@@ -24,6 +24,8 @@ public class GameClientImpl implements GameClient {
 	
 	private Socket clientSocket;
 	
+	private ObjectInputStream in;
+	
 	private ObjectOutputStream out;
 			
 	private GameClientListener listener;
@@ -47,8 +49,10 @@ public class GameClientImpl implements GameClient {
 	public boolean start(){
 		try {
 			this.clientSocket = new Socket(this.server, this.port);
+			this.in = new ObjectInputStream(this.clientSocket.getInputStream());
 			this.out = new ObjectOutputStream(this.clientSocket.getOutputStream());
-			this.listener = new GameClientListener(this);
+			this.out.writeUTF(this.username); // TODO se queda bloqueado
+			this.listener = new GameClientListener();
 			this.threadExecutor.execute(this.listener);
 			return true;
 		} catch (Exception e) {
@@ -101,7 +105,7 @@ public class GameClientImpl implements GameClient {
 		BufferedReader stdIn = new BufferedReader( new InputStreamReader(System.in));
 		String userInput;
 		try {
-			while ((userInput = stdIn.readLine()) != null) {
+			while ((userInput = stdIn.readLine().toUpperCase()) != null) {
 			    if (userInput == "PIEDRA" || userInput == "PAPEL" || userInput == "TIJERA") {
 					client.sendElement(new GameElement(client.clientId, ElementType.valueOf(userInput)));
 				}else if (userInput == "LOGOUT" || userInput == "SHUTDOWN") {
@@ -124,20 +128,15 @@ public class GameClientImpl implements GameClient {
 	 * @author Miguel Angel Leon Bardavio
 	 */
 	private class GameClientListener implements Runnable{
-		
-		private GameClientImpl client;
-		
-		private ObjectInputStream in;
+			
 		
 		private Boolean listenerRunStatus;
 		/**
 		 * @param clientSocket
 		 */
-		private GameClientListener(GameClientImpl client) {
+		private GameClientListener() {
 			try {
-				this.client = client;
-				this.in = new ObjectInputStream(client.clientSocket.getInputStream());
-				this.client.clientId = this.in.readInt();
+				clientId = in.readInt();// TODO se queda bloqueado
 			} catch (IOException e) {
 				System.out.println("LISTENER CONSTRUCTOR IO EXCEPTION:" + e.getMessage());
 			}
@@ -151,14 +150,13 @@ public class GameClientImpl implements GameClient {
 			this.listenerRunStatus = true;
 				try {
 					while (listenerRunStatus) {
-						GameResult result = (GameResult) this.in.readObject();
-						System.out.println(result.toString());
+						String result = in.readUTF();
+						System.out.println(result);
+						// TODO Desconectar correctamente si usuario repetido.
 					}
-					this.in.close();
-				} catch (ClassNotFoundException e) {
-					System.out.println("GameClientListener:" + e.getMessage());
+					in.close();
 				} catch (IOException e) {
-					System.out.println("GameClientListener:" + e.getMessage());
+					System.out.println("LISTENER IO EXCEPTION:" + e.getMessage());
 				}
 		}
 	}
