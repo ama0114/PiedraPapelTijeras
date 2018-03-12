@@ -87,7 +87,7 @@ public class GameClientImpl implements GameClient {
 				return true;
 			}
 		} catch (Exception e) {
-			System.out.println("START EXCEPTION:"+e.getMessage());
+			System.err.println("START EXCEPTION:"+e.getMessage());
 			return false;
 		}
 	}
@@ -99,7 +99,7 @@ public class GameClientImpl implements GameClient {
 		try {
 			this.out.writeObject(element);
 		} catch (IOException e) {
-			System.out.println("SEND ELEMENT IO EXCEPTION:" + e.getMessage());
+			System.err.println("SEND ELEMENT IO EXCEPTION:" + e.getMessage());
 		}
 	}
 	
@@ -111,7 +111,7 @@ public class GameClientImpl implements GameClient {
 			this.listener.listenerRunStatus = false;
 			this.clientSocket.close();
 		} catch (IOException e) {
-			System.out.println("DISCONNECT IO EXCEPTION:" + e.getMessage());
+			System.err.println("DISCONNECT IO EXCEPTION:" + e.getMessage());
 		}
 		
 	}
@@ -146,9 +146,12 @@ public class GameClientImpl implements GameClient {
 						System.out.println("INVALID COMMAND");
 					}
 				}
+			}else{
+				System.err.println("Fallo al arrancar la aplicación del cliente.");
 			}
 		} catch (IOException e) {
-			System.out.println("MAIN IO EXCEPTION:" + e.getMessage());
+			System.err.println("MAIN IO EXCEPTION:" + e.getMessage());
+			System.exit(1);
 		}
 	}
 	
@@ -173,12 +176,13 @@ public class GameClientImpl implements GameClient {
 				try {
 					while (listenerRunStatus) {
 						String result = in.readObject().toString();
-						System.out.println(result);
+						System.out.println(username + " : " + result);
 					}
+					System.err.println("LISTENER SHUTDOWN");
 				} catch (IOException e) {
-					System.out.println("LISTENER IO EXCEPTION:" + e.getMessage());
+					System.err.println("LISTENER IO EXCEPTION:" + e.getMessage());
 				} catch (ClassNotFoundException e) {
-					System.out.println("LISTENER CAST EXCEPTION:" + e.getMessage());
+					System.err.println("LISTENER CAST EXCEPTION:" + e.getMessage());
 				}
 		}
 	}
