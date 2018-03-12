@@ -76,6 +76,40 @@ public class GameServerImpl implements GameServer {
 			System.out.println("SHUTDOWN IO EXCEPTION:" + e.getMessage());
 		}
 	}
+	
+	private void sendResult(ServerThreadForClient clientThread, ServerThreadForClient oponentThread, GameResult gameClient, GameResult gameOponent) throws IOException{
+		clientThread.out.writeObject(gameClient);
+		oponentThread.out.writeObject(gameOponent);
+		oponentThread.notify();
+	}
+	
+	private void getResult(GameElement clientElement, GameElement oponentElement, ServerThreadForClient clientThread, 
+							ServerThreadForClient oponentThread) throws IOException{
+		if(clientElement.getElement() == ElementType.PAPEL){
+			if(oponentElement.getElement() == ElementType.PIEDRA){
+				sendResult(clientThread,oponentThread,GameResult.WIN, GameResult.LOSE);
+			}else if(oponentElement.getElement() == ElementType.TIJERA){
+				sendResult(clientThread,oponentThread,GameResult.LOSE, GameResult.WIN);
+			}
+		}
+		else if(clientElement.getElement() == ElementType.PIEDRA){
+			if(oponentElement.getElement() == ElementType.PAPEL){
+				sendResult(clientThread,oponentThread,GameResult.LOSE, GameResult.WIN);
+			}else if(oponentElement.getElement() == ElementType.TIJERA){
+				sendResult(clientThread,oponentThread,GameResult.WIN, GameResult.LOSE);
+			}
+		}
+		else if(clientElement.getElement() == ElementType.TIJERA){
+			if(oponentElement.getElement() == ElementType.PIEDRA){
+				sendResult(clientThread,oponentThread,GameResult.LOSE, GameResult.WIN);
+			}else if(oponentElement.getElement() == ElementType.PAPEL){
+				sendResult(clientThread,oponentThread,GameResult.WIN, GameResult.LOSE);
+			}
+		}else if(clientElement.getElement() == oponentElement.getElement()){
+			sendResult(clientThread,oponentThread,GameResult.DRAW, GameResult.DRAW);
+		}
+			
+	}
 
 	/* (non-Javadoc)
 	 * @see es.ubu.lsi.server.GameServer#broadcastRoom(es.ubu.lsi.common.GameElement)
@@ -88,24 +122,7 @@ public class GameServerImpl implements GameServer {
 			//Buscar oponente. ¿Ha respondido?
 			if (oponentElement != null){// TODO Refactorizar
 				ServerThreadForClient oponentThread = this.clientList.get(oponentElement.getClientId());
-				//Si: Determinar resultado de la partida, enviar resultados a ambos, y eliminar respuesta.
-				if (element.getElement() == ElementType.PAPEL && oponentElement.getElement() == ElementType.PIEDRA) {
-					clientThread.out.writeObject(GameResult.WIN);
-					oponentThread.out.writeObject(GameResult.LOSE);
-					oponentThread.notify();
-				}else if (element.getElement() == ElementType.PIEDRA && oponentElement.getElement() == ElementType.TIJERA) {
-					clientThread.out.writeObject(GameResult.WIN);
-					oponentThread.out.writeObject(GameResult.LOSE);
-					oponentThread.notify();
-				}else if (element.getElement() == ElementType.TIJERA && oponentElement.getElement() == ElementType.PAPEL) {
-					clientThread.out.writeObject(GameResult.WIN);
-					oponentThread.out.writeObject(GameResult.LOSE);
-					oponentThread.notify();
-				}else if (element.getElement() == oponentElement.getElement()) {
-					clientThread.out.writeObject(GameResult.DRAW);
-					oponentThread.out.writeObject(GameResult.DRAW);
-					oponentThread.notify();
-				}
+				getResult(element, oponentElement, clientThread, oponentThread);
 			}else {
 				//No: Almacenar respuesta y enviar WAIT
 				this.roomList.put(clientThread.idRoom, element);
