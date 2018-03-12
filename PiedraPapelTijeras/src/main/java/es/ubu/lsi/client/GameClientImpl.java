@@ -13,26 +13,53 @@ import es.ubu.lsi.common.*;
  */
 public class GameClientImpl implements GameClient {
 	
+	/**
+	 * Nombre o direccion del host.
+	 */
 	private String server;
 	
+	/**
+	 * Puerto de conexion al servidor.
+	 */
 	private int port;
 	
+	/**
+	 * Nickname del jugador.
+	 */
 	private String username;
 	
+	/**
+	 * ID con el que nos identifica el servidor.
+	 */
 	private int clientId;
 	
+	/**
+	 * Conector.
+	 */
 	private Socket clientSocket;
 	
+	/**
+	 * Flujo de salida.
+	 */
 	private ObjectOutputStream out;
 	
+	/**
+	 * Flujo de entrada.
+	 */
 	private ObjectInputStream in;
 			
+	/**
+	 * Hilo de escucha al servidor.
+	 */
 	private GameClientListener listener;
 	
 	/**
-	 * @param server nombre del servidor
-	 * @param port puerto de conexion del servidor
-	 * @param username nombre de usuario
+	 * Inicializa los atributos pasados como argumentos.
+	 * 
+	 * @param server Nombre del servidor.
+	 * @param port Puerto de conexion del servidor.
+	 * @param username Nombre de usuario.
+	 * @author Antonio de los Mozos Alonso
 	 */
 	public GameClientImpl(String server, int port, String username){
 			this.server = server;
@@ -98,6 +125,7 @@ public class GameClientImpl implements GameClient {
 	 * Ejemplo de llamada: 'java es.ubu.lsi.client.GameClientImpl 10.168.168.13 nickname'.
 	 * 
 	 * @param args Recibe una direccion IP/Nombre de la máquina y un nickname como argumentos.
+	 * @author Miguel Angel Leon Bardavio
 	 */
 	public static void main(String[] args){
 		GameClientImpl client = new GameClientImpl(args[0], 1500, args[1]);
@@ -126,15 +154,17 @@ public class GameClientImpl implements GameClient {
 	 * Hilo de escucha al servidor y muestra los mensajes que recibe del servidor por pantalla.
 	 * 
 	 * @author Antonio de los Mozos Alonso
-	 * @author Miguel Angel Leon Bardavio
 	 */
 	private class GameClientListener implements Runnable{	
 		
+		/**
+		 * Estado del listener, true:escuchando, false en caso contrario.
+		 */
 		private Boolean listenerRunStatus;
 		
-		/**
-		 * Metodo para ejecutar un hilo de escucha de mensajes al servidor
-		 * y mostrar los mensajes entrantes por pantalla.
+		
+		/* (non-Javadoc)
+		 * @see java.lang.Runnable#run()
 		 */
 		public void run(){
 			this.listenerRunStatus = true;

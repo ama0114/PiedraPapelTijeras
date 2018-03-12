@@ -7,23 +7,47 @@ import java.util.HashMap;
 import es.ubu.lsi.common.*;
 
 /**
+ * Implementa la interfaz GameServer.
+ * 
  * @author Miguel Angel Leon
- *
+ * @see GameServer
  */
 public class GameServerImpl implements GameServer {
 
+	/**
+	 * Puerto al que se asocia el conector o socket.
+	 */
 	private int port;
 
+	/**
+	 * Socket del servidor.
+	 */
 	private ServerSocket serverSocket;
 
+	/**
+	 * Estado del servidor: true-conectado/encendido, false en caso contrario.
+	 */
 	private Boolean serverRunStatus;
 
+	/**
+	 * Mapa que asocia el hilo asociado al cliente con el ID del cliente.
+	 */
 	private HashMap<Integer, ServerThreadForClient> clientList = new HashMap<Integer, ServerThreadForClient>();
 
+	/**
+	 * Lista de salas.
+	 * <p>
+	 * Ayuda en la funcion broadcastRoom.
+	 * 
+	 * @see GameServerImpl#broadcastRoom(GameElement)
+	 */
 	private HashMap<Integer, GameElement> roomList = new HashMap<Integer, GameElement>();
 	
 	/**
-	 * @param port
+	 * Especifica el puerto al que se asociara el socket del servidor.
+	 * 
+	 * @param port Por ejemplo: '1500'.
+	 * @author Miguel Angel Leon Bardavio
 	 */
 	public GameServerImpl(int port) {
 		this.port = port;
@@ -70,11 +94,34 @@ public class GameServerImpl implements GameServer {
 		}
 	}
 	
+	/**
+	 * Envia los resultados a los clientes especificados por sus hilos.
+	 * 
+	 * @param clientThread Cliente1.
+	 * @param oponentThread Cliente2.
+	 * @param gameClient Resultado del cliente1.
+	 * @param gameOponent Resultado del cliente2.
+	 * @throws IOException en caso de fallo del flujo de datos entre cliente y servidor.
+	 * @author Antonio de los Mozos Alonso
+	 */
 	private void sendResult(ServerThreadForClient clientThread, ServerThreadForClient oponentThread, GameResult gameClient, GameResult gameOponent) throws IOException{
 		clientThread.out.writeObject(gameClient);
 		oponentThread.out.writeObject(gameOponent);
 	}
 	
+	/**
+	 * Obtiene el resultado de una confrontacion y lo envia a los jugadores de una sala mediante la llamada
+	 * a sendResult.
+	 * 
+	 * @param clientElement Movimiento del Cliente1.
+	 * @param oponentElement Movimiento del CLiente2.
+	 * @param clientThread ServerThread del Cliente1.
+	 * @param oponentThread ServerThread del Cliente2.
+	 * @throws IOException en caso de fallo del flujo de datos entre cliente y servidor.
+	 * @author Antonio de los Mozos Alonso
+	 * @see ServerThreadForClient
+	 * @see GameServerImpl#sendResult(ServerThreadForClient, ServerThreadForClient, GameResult, GameResult)
+	 */
 	private void getResult(GameElement clientElement, GameElement oponentElement, ServerThreadForClient clientThread, 
 							ServerThreadForClient oponentThread) throws IOException{
 		if(clientElement.getElement() == ElementType.PAPEL){
@@ -136,7 +183,12 @@ public class GameServerImpl implements GameServer {
 	}
 	
 	/**
-	 * @param args
+	 * Instancia el servidor en el puerto 1500 y lo arranca mediante startup().
+	 * 
+	 * @param args No espera arumentos.
+	 * @author Miguel Angel Leon Bardavio
+	 * @see GameServerImpl#startup()
+	 * @see GameServerImpl#GameServerImpl(int)
 	 */
 	public static void main(String[] args) {
 		GameServerImpl server = new GameServerImpl(1500);
@@ -144,27 +196,57 @@ public class GameServerImpl implements GameServer {
 	}
 
 	/**
+	 * Hilo de escucha e interaccion con el cliente.
+	 * 
 	 * @author Miguel Angel Leon
 	 *
 	 */
 	public class ServerThreadForClient extends Thread {
 
+		/**
+		 * ID del cliente.
+		 */
 		private int idClient;
 		
+		/**
+		 * Nickname del jugador.
+		 */
 		private String username;
 		
+		/**
+		 * Sala asociada al jugador.
+		 */
 		private int idRoom;
 		
+		/**
+		 * Conector del jugador
+		 */
 		private Socket clientSocket;
 
+		/**
+		 * Flujo de salida.
+		 */
 		private ObjectOutputStream out;
 
+		/**
+		 * Flujo de entrada.
+		 */
 		private ObjectInputStream in;
 
+		/**
+		 * Estado del hilo del cliente, true:escuchando.
+		 */
 		private Boolean runStatus;
 
+		
 		/**
-		 * @param idRoom
+		 * Inicializa los atributos, abre los flujos de entrada/salida y recibe el nickname del cliente y
+		 * envia el id asignado al cliente.
+		 * 
+		 * @param clientSocket Conector aceptado por el servidor.
+		 * @param idClient Id del cliente.
+		 * @param idRoom Id de la sala asociada al cliente.
+		 * @author Miguel Angel Leon Bardavio
 		 */
 		private ServerThreadForClient(Socket clientSocket, int idClient, int idRoom) {
 			try {
@@ -195,7 +277,10 @@ public class GameServerImpl implements GameServer {
 		}
 
 		/**
+		 * Devuelve elID de la sala asociada al cliente.
+		 * 
 		 * @return Room ID.
+		 * @author Miguel Angel Leon Bardavio
 		 */
 		public int getIdRoom() {
 			return idRoom;
