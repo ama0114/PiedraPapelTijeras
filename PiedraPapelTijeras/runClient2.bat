@@ -1,1 +1,0 @@
-mvn exec:java@Client -Dexec.args="localhost player2"
