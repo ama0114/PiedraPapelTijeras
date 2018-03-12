@@ -74,7 +74,8 @@ public class GameServerImpl implements GameServer {
 				}
 			}
 		} catch (IOException e) {
-			System.out.println("STARTUP IO EXCEPTION:" + e.getMessage());
+			System.err.println("STARTUP IO EXCEPTION:" + e.getMessage());
+			System.exit(1);
 		}
 	}
 
@@ -82,15 +83,15 @@ public class GameServerImpl implements GameServer {
 	 * @see es.ubu.lsi.server.GameServer#shutdown()
 	 */
 	public void shutdown() {
+		this.serverRunStatus = false;
 		try {
 			for (ServerThreadForClient clientThread : this.clientList.values()) {
 				clientThread.runStatus = false;
 				clientThread.clientSocket.close();
 			}
-			this.serverRunStatus = false;
 			this.serverSocket.close();
 		} catch (IOException e) {
-			System.out.println("SHUTDOWN IO EXCEPTION:" + e.getMessage());
+			System.err.println("SHUTDOWN IO EXCEPTION:" + e.getMessage());
 		}
 	}
 	
@@ -169,9 +170,9 @@ public class GameServerImpl implements GameServer {
 				clientThread.out.writeObject(GameResult.WAITING);
 			}
 		} catch (IOException e) {
-			System.out.println("BROADCAST IO EXCEPTION:"+e.getMessage());
+			System.err.println("BROADCAST IO EXCEPTION:"+e.getMessage());
 		} catch (NullPointerException e) {
-			System.out.println("BROADCAST NULLPointer exception-client doesn't exists:"+e.getMessage());
+			System.err.println("BROADCAST NULLPointer exception-client doesn't exists:"+e.getMessage());
 		}
 	}
 
@@ -270,9 +271,9 @@ public class GameServerImpl implements GameServer {
 					this.start();		
 				}
 			} catch (IOException e) {
-				System.out.println("ServerThreadForClient:"+e.getMessage());
+				System.err.println("ServerThreadForClient:"+e.getMessage());
 			} catch (ClassNotFoundException e) {
-				System.out.println("ServerThreadForClient:"+e.getMessage());
+				System.err.println("ServerThreadForClient:"+e.getMessage());
 			}
 		}
 
@@ -310,9 +311,11 @@ public class GameServerImpl implements GameServer {
 					}
 				}
 			} catch (IOException e) {
-				System.out.println("ServerThreadForClient:"+e.getMessage());
+				System.err.println("ServerThreadForClient:"+e.getMessage());
+				remove(this.idClient);
+				this.runStatus = false;
 			} catch (ClassNotFoundException e) {
-				System.out.println("ServerThreadForClient:"+e.getMessage());
+				System.err.println("ServerThreadForClient:"+e.getMessage());
 			}
 		}
 	}
