@@ -2,7 +2,6 @@ package es.ubu.lsi.client;
 
 import java.io.*;
 import java.net.Socket;
-import java.util.concurrent.*;
 import es.ubu.lsi.common.*;
 
 /**
@@ -30,8 +29,6 @@ public class GameClientImpl implements GameClient {
 			
 	private GameClientListener listener;
 	
-	private ExecutorService threadExecutor = Executors.newSingleThreadExecutor();
-	
 	/**
 	 * @param server nombre del servidor
 	 * @param port puerto de conexion del servidor
@@ -52,8 +49,8 @@ public class GameClientImpl implements GameClient {
 			this.in = new ObjectInputStream(this.clientSocket.getInputStream());
 			this.out = new ObjectOutputStream(this.clientSocket.getOutputStream());
 			this.out.writeUTF(this.username); // TODO se queda bloqueado
-			this.listener = new GameClientListener();
-			this.threadExecutor.execute(this.listener);
+			Thread listenerThread = new Thread(this.listener = new GameClientListener());
+			listenerThread.start();
 			return true;
 		} catch (Exception e) {
 			System.out.println("START EXCEPTION:"+e.getMessage());
@@ -78,7 +75,6 @@ public class GameClientImpl implements GameClient {
 	public void disconnect(){
 		try {
 			this.listener.listenerRunStatus = false;
-			this.threadExecutor.shutdown();
 			this.clientSocket.close();
 		} catch (IOException e) {
 			System.out.println("DISCONNECT IO EXCEPTION:" + e.getMessage());

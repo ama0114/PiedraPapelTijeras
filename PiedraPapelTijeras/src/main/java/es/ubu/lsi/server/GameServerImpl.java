@@ -5,9 +5,7 @@ package es.ubu.lsi.server;
 
 import java.io.*;
 import java.net.*;
-import java.util.concurrent.*;
 import java.util.HashMap;
-import java.util.Map;
 
 import es.ubu.lsi.common.*;
 
@@ -22,8 +20,6 @@ public class GameServerImpl implements GameServer {
 	private ServerSocket serverSocket;
 
 	private Boolean serverRunStatus;
-
-	private ExecutorService threadExecutor = Executors.newCachedThreadPool();
 
 	private HashMap<Integer, ServerThreadForClient> clientList = new HashMap<Integer, ServerThreadForClient>();
 
@@ -53,7 +49,6 @@ public class GameServerImpl implements GameServer {
 				if(idClient % 2 == 0)
 					idRoom++;
 				idClient++;
-				threadExecutor.execute(clientThread);
 			}
 		} catch (IOException e) {
 			System.out.println("STARTUP IO EXCEPTION:" + e.getMessage());
@@ -69,7 +64,6 @@ public class GameServerImpl implements GameServer {
 				clientThread.runStatus = false;
 				clientThread.clientSocket.close();
 			}
-			this.threadExecutor.shutdown();
 			this.serverRunStatus = false;
 			this.serverSocket.close();
 		} catch (IOException e) {
@@ -188,6 +182,7 @@ public class GameServerImpl implements GameServer {
 				//Recibir username y enviar clientId
 				this.username = this.in.readUTF(); // TODO se bloquea
 				this.out.writeInt(this.idClient);// Enviar idClient al cliente
+				this.start();
 			} catch (IOException e) {
 				System.out.println("ServerThreadForClient:"+e.getMessage());
 			}
