@@ -11,32 +11,35 @@
 
 	    <target name="compile">
 	        <mkdir dir="build/classes"/>
-	        <javac srcdir="src" destdir="build/classes"/>
+	        <javac srcdir="src/main" destdir="build/classes"/>
 	    </target>
 
-	    <target name="jar-server" depends="compile">
+	    <target name="jar" depends="compile">
 	        <mkdir dir="build/jar"/>
 	        <jar destfile="build/jar/Server.jar" basedir="build/classes">
 	            <manifest>
 	                <attribute name="Main-Class" value="es.ubu.lsi.server.GameServerImpl"/>
 	            </manifest>
 	        </jar>
+	    	<jar destfile="build/jar/Client.jar" basedir="build/classes">
+	            <manifest>
+	                <attribute name="Main-Class" value="es.ubu.lsi.client.GameClientImpl"/>
+	            </manifest>
+	        </jar>
 	    </target>
 	
-		<target name="jar-client" depends="compile">
-		        <mkdir dir="build/jar"/>
-		        <jar destfile="build/jar/Client.jar" basedir="build/classes">
-		            <manifest>
-		                <attribute name="Main-Class" value="es.ubu.lsi.client.GameClientImpl"/>
-		            </manifest>
-		        </jar>
-		    </target>
+	<target name="javadoc">
+	   <mkdir dir="doc"/>
+	   <javadoc packagenames="es.ubu.lsi.client, es.ubu.lsi.common, es.ubu.lsi.server"
+	            sourcepath="src/main/java"
+	            destdir="doc"/>
+	</target>
 	
-	<target name="run-server" depends="jar-server">
+	<target name="run-server" depends="jar">
 	    <java jar="build/jar/GameServerImpl.jar" fork="true"/>
 	</target>
 	
-	<target name="run-client" depends="jar-client">
+	<target name="run-client" depends="jar">
 		<java jar="build/jar/GameClientImpl.jar" fork="true"/>
 	</target>
 </project>

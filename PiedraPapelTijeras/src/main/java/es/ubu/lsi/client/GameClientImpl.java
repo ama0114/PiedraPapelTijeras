@@ -3,12 +3,14 @@ package es.ubu.lsi.client;
 import java.io.*;
 import java.net.Socket;
 import es.ubu.lsi.common.*;
+import es.ubu.lsi.server.GameServer;
 
 /**
  * Implementa la interfaz GameClient.
  * 
  * @author Antonio de los Mozos Alonso
  * @author Miguel Angel Leon Bardavio
+ * @see GameClient
  *
  */
 public class GameClientImpl implements GameClient {
