@@ -52,6 +52,7 @@
 		                <configuration>
 		                    <mainClass>es.ubu.lsi.client.GameClientImpl</mainClass>
 		                    <arguments>
+		                    	<argument>localhost</argument>
 								<argument>1500</argument>
 							</arguments>
 		                </configuration>

@@ -1,6 +1,3 @@
-/**
- * 
- */
 package es.ubu.lsi.server;
 
 import java.io.*;
@@ -44,11 +41,13 @@ public class GameServerImpl implements GameServer {
 			while(serverRunStatus){
 				Socket clientSocket = serverSocket.accept();
 				ServerThreadForClient clientThread = new ServerThreadForClient(clientSocket, idClient, idRoom);
-				this.clientList.put(idClient, clientThread);
-				this.roomList.put(idRoom, null);
-				if(idClient % 2 == 0)
-					idRoom++;
-				idClient++;
+				if (clientThread.idClient != 0) {
+					this.clientList.put(idClient, clientThread);
+					this.roomList.put(idRoom, null);
+					if(idClient % 2 == 0)
+						idRoom++;
+					idClient++;
+				}
 			}
 		} catch (IOException e) {
 			System.out.println("STARTUP IO EXCEPTION:" + e.getMessage());
@@ -74,7 +73,6 @@ public class GameServerImpl implements GameServer {
 	private void sendResult(ServerThreadForClient clientThread, ServerThreadForClient oponentThread, GameResult gameClient, GameResult gameOponent) throws IOException{
 		clientThread.out.writeObject(gameClient);
 		oponentThread.out.writeObject(gameOponent);
-		oponentThread.notify();
 	}
 	
 	private void getResult(GameElement clientElement, GameElement oponentElement, ServerThreadForClient clientThread, 
@@ -99,7 +97,8 @@ public class GameServerImpl implements GameServer {
 			}else if(oponentElement.getElement() == ElementType.PAPEL){
 				sendResult(clientThread,oponentThread,GameResult.WIN, GameResult.LOSE);
 			}
-		}else if(clientElement.getElement() == oponentElement.getElement()){
+		}
+		if(clientElement.getElement() == oponentElement.getElement()){
 			sendResult(clientThread,oponentThread,GameResult.DRAW, GameResult.DRAW);
 		}
 			
@@ -112,23 +111,20 @@ public class GameServerImpl implements GameServer {
 		try {
 			//Obtener idClient de element
 			ServerThreadForClient clientThread = this.clientList.get(element.getClientId());
-			GameElement oponentElement = this.roomList.get(clientThread.idRoom);
+			GameElement oponentElement = this.roomList.remove(clientThread.idRoom);
 			//Buscar oponente. ¿Ha respondido?
-			if (oponentElement != null){// TODO Refactorizar
+			if (oponentElement != null){
 				ServerThreadForClient oponentThread = this.clientList.get(oponentElement.getClientId());
 				getResult(element, oponentElement, clientThread, oponentThread);
 			}else {
 				//No: Almacenar respuesta y enviar WAIT
 				this.roomList.put(clientThread.idRoom, element);
 				clientThread.out.writeObject(GameResult.WAITING);
-				clientThread.wait();
 			}
 		} catch (IOException e) {
 			System.out.println("BROADCAST IO EXCEPTION:"+e.getMessage());
 		} catch (NullPointerException e) {
 			System.out.println("BROADCAST NULLPointer exception-client doesn't exists:"+e.getMessage());
-		} catch (InterruptedException e) {
-			System.out.println("BROADCAST INTERRUPTED exception::"+e.getMessage());
 		}
 	}
 
@@ -161,9 +157,9 @@ public class GameServerImpl implements GameServer {
 		
 		private Socket clientSocket;
 
-		private ObjectInputStream in;
-
 		private ObjectOutputStream out;
+
+		private ObjectInputStream in;
 
 		private Boolean runStatus;
 
@@ -177,13 +173,23 @@ public class GameServerImpl implements GameServer {
 				this.idRoom = idRoom;
 				this.clientSocket = clientSocket;
 				//Crear flujos de entrada/salida
-				this.in = new ObjectInputStream(this.clientSocket.getInputStream());
 				this.out = new ObjectOutputStream(this.clientSocket.getOutputStream());
+				this.in = new ObjectInputStream(this.clientSocket.getInputStream());
 				//Recibir username y enviar clientId
-				this.username = this.in.readUTF(); // TODO se bloquea
-				this.out.writeInt(this.idClient);// Enviar idClient al cliente
-				this.start();
+				this.username = this.in.readObject().toString();
+				for (ServerThreadForClient clientThread : clientList.values()) {
+					if (clientThread.username == this.username) {
+						this.idClient = 0;
+						break;
+					}
+				}
+				this.out.writeObject(this.idClient);
+				if (this.idClient != 0) {
+					this.start();		
+				}
 			} catch (IOException e) {
+				System.out.println("ServerThreadForClient:"+e.getMessage());
+			} catch (ClassNotFoundException e) {
 				System.out.println("ServerThreadForClient:"+e.getMessage());
 			}
 		}
@@ -201,12 +207,6 @@ public class GameServerImpl implements GameServer {
 		@Override
 		public void run() {
 			this.runStatus = true;
-			for (ServerThreadForClient client : clientList.values()) {
-				if (client.username == this.username && client.idClient == this.idClient) {
-					this.runStatus = false;
-					remove(this.idClient);
-				}
-			}
 			try {
 				while(this.runStatus){
 					GameElement gameElement = (GameElement) in.readObject();

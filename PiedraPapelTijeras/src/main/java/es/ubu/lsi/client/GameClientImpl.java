@@ -23,9 +23,9 @@ public class GameClientImpl implements GameClient {
 	
 	private Socket clientSocket;
 	
-	private ObjectInputStream in;
-	
 	private ObjectOutputStream out;
+	
+	private ObjectInputStream in;
 			
 	private GameClientListener listener;
 	
@@ -46,12 +46,17 @@ public class GameClientImpl implements GameClient {
 	public boolean start(){
 		try {
 			this.clientSocket = new Socket(this.server, this.port);
-			this.in = new ObjectInputStream(this.clientSocket.getInputStream());
 			this.out = new ObjectOutputStream(this.clientSocket.getOutputStream());
-			this.out.writeUTF(this.username); // TODO se queda bloqueado
-			Thread listenerThread = new Thread(this.listener = new GameClientListener());
-			listenerThread.start();
-			return true;
+			this.in = new ObjectInputStream(this.clientSocket.getInputStream());
+			this.out.writeObject(this.username);
+			this.clientId = (Integer) this.in.readObject();
+			if (this.clientId == 0) {
+				return false;
+			}else{
+				Thread listenerThread = new Thread(this.listener = new GameClientListener());
+				listenerThread.start();
+				return true;
+			}
 		} catch (Exception e) {
 			System.out.println("START EXCEPTION:"+e.getMessage());
 			return false;
@@ -96,20 +101,20 @@ public class GameClientImpl implements GameClient {
 	 */
 	public static void main(String[] args){
 		GameClientImpl client = new GameClientImpl(args[0], 1500, args[1]);
-		client.start();
-		
-		BufferedReader stdIn = new BufferedReader( new InputStreamReader(System.in));
-		String userInput;
 		try {
-			while ((userInput = stdIn.readLine().toUpperCase()) != null) {
-			    if (userInput == "PIEDRA" || userInput == "PAPEL" || userInput == "TIJERA") {
-					client.sendElement(new GameElement(client.clientId, ElementType.valueOf(userInput)));
-				}else if (userInput == "LOGOUT" || userInput == "SHUTDOWN") {
-					client.sendElement(new GameElement(client.clientId, ElementType.valueOf(userInput)));
-					client.disconnect();
-					break;
-				}else {
-					System.out.println("INVALID COMMAND");
+			if(client.start()){
+				BufferedReader stdIn = new BufferedReader( new InputStreamReader(System.in));
+				String userInput;
+				while ((userInput = stdIn.readLine().toUpperCase()) != null) {
+					if (userInput.equals("PIEDRA") || userInput.equals("PAPEL") || userInput.equals("TIJERA")) {
+						client.sendElement(new GameElement(client.clientId, ElementType.valueOf(userInput)));
+					}else if (userInput.equals("LOGOUT") || userInput.equals("SHUTDOWN")) {
+						client.sendElement(new GameElement(client.clientId, ElementType.valueOf(userInput)));
+						client.disconnect();
+						break;
+					}else {
+						System.out.println("INVALID COMMAND");
+					}
 				}
 			}
 		} catch (IOException e) {
@@ -123,21 +128,10 @@ public class GameClientImpl implements GameClient {
 	 * @author Antonio de los Mozos Alonso
 	 * @author Miguel Angel Leon Bardavio
 	 */
-	private class GameClientListener implements Runnable{
-			
+	private class GameClientListener implements Runnable{	
 		
 		private Boolean listenerRunStatus;
-		/**
-		 * @param clientSocket
-		 */
-		private GameClientListener() {
-			try {
-				clientId = in.readInt();// TODO se queda bloqueado
-			} catch (IOException e) {
-				System.out.println("LISTENER CONSTRUCTOR IO EXCEPTION:" + e.getMessage());
-			}
-		}
-
+		
 		/**
 		 * Metodo para ejecutar un hilo de escucha de mensajes al servidor
 		 * y mostrar los mensajes entrantes por pantalla.
@@ -146,13 +140,13 @@ public class GameClientImpl implements GameClient {
 			this.listenerRunStatus = true;
 				try {
 					while (listenerRunStatus) {
-						String result = in.readUTF();
+						String result = in.readObject().toString();
 						System.out.println(result);
-						// TODO Desconectar correctamente si usuario repetido.
 					}
-					in.close();
 				} catch (IOException e) {
 					System.out.println("LISTENER IO EXCEPTION:" + e.getMessage());
+				} catch (ClassNotFoundException e) {
+					System.out.println("LISTENER CAST EXCEPTION:" + e.getMessage());
 				}
 		}
 	}
